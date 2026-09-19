@@ -58,8 +58,6 @@ int main(void)
             if (c == 27)
                 break;
         }
-
-        __syscall0(SYS_YIELD);
     }
 
     __syscall1(SYS_FB_CLEAR, (long)0xFF000000);
