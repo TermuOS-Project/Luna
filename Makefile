@@ -10,7 +10,7 @@ CXXFLAGS := $(CFLAGS) -std=c++20
 CRT0 := $(TERMUOS_ROOT)/tsys/lib/crt0.S
 LIB  := $(TERMUOS_ROOT)/kbuild/tsys/libtsys.a
 
-OBJS := src/main.o src/gfx.o src/window.o src/focus.o src/cxxstub.o
+OBJS := src/main.o src/gfx.o src/window.o src/focus.o src/cursor.o src/cxxstub.o
 OUT  := luna.tsys
 
 .PHONY: all clean

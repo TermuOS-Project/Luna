@@ -50,10 +50,9 @@ void Gfx::put_pixel(int x, int y, uint32_t colour)
 
 uint32_t Gfx::get_pixel(int x, int y)
 {
-    (void)x;
-    (void)y;
-    /* no SYS_FB_GETPIXEL yet */
-    return 0;
+    if (x < 0 || y < 0 || x >= w_ || y >= h_)
+        return 0;
+    return ::fb_getpixel((uint32_t)x, (uint32_t)y);
 }
 
 uint32_t Gfx::rgb(uint8_t r, uint8_t g, uint8_t b)

@@ -2,24 +2,28 @@
 #include "theme.hpp"
 #include "window.hpp"
 #include "events.hpp"
+#include "cursor.hpp"
 
 extern "C" {
 #include <input.h>
 #include <unistd.h>
 }
 
-static void composite(Gfx &g, Window &win)
+static void composite(Gfx &g, Window &win, Cursor &cur, int mx, int my)
 {
     g.fill_rect(0, 0, g.width(), g.height(), Theme::desktop);
     if (win.visible)
         win.paint_tree(g);
     win.dirty = false;
+    if (mx >= 0 && my >= 0 && mx < g.width() && my < g.height())
+        cur.draw(g, mx, my);
 }
 
 extern "C" int main(void)
 {
     Gfx g;
     g.init_from_fb();
+    mouse_set_bounds(g.width(), g.height());
     if (g.width() <= 0) {
         write(1, "luna: no fb\n", 12);
         return 1;
@@ -33,10 +37,12 @@ extern "C" int main(void)
     win.title = "Luna";
     win.visible = true;
 
-    composite(g, win);
-
+    Cursor cursor;
+    int mx = 100, my = 100;
+    int ox = mx, oy = my;
     uint8_t prev_buttons = 0;
-    int mx = 0, my = 0;
+
+    composite(g, win, cursor, mx, my);
 
     for (;;) {
         mouse_state m;
@@ -61,12 +67,11 @@ extern "C" int main(void)
             if (win.visible)
                 win.on_event(ev);
 
-            if (win.dirty)
-                composite(g, win);
-
-            /* cursor on top after composite */
-            if (mx >= 0 && my >= 0 && mx < g.width() && my < g.height())
-                g.put_pixel(mx, my, 0xFFFFFFFFu);
+            if (win.dirty || mx != ox || my != oy) {
+                composite(g, win, cursor, mx, my);
+                ox = mx;
+                oy = my;
+            }
         }
 
         if (kbd_haschar()) {
@@ -81,7 +86,7 @@ extern "C" int main(void)
                 kev.y = my;
                 win.on_event(kev);
                 if (win.dirty)
-                    composite(g, win);
+                    composite(g, win, cursor, mx, my);
             }
         }
     }
