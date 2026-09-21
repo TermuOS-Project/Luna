@@ -1,13 +1,18 @@
-#pragma once
 #include "widget.hpp"
-#include "theme.hpp"
+#include "startmenu.hpp"
 #include "wm.hpp"
+#include "theme.hpp"
+
+extern "C"
+{
+#include <rtc.h>
+}
 
 class Taskbar : public Widget
 {
 public:
-    static constexpr int kH = 28;
     Wm *wm = nullptr;
+    static constexpr int kH = 36;
 
     void layout(int screen_w, int screen_h)
     {
@@ -15,56 +20,67 @@ public:
         y = screen_h - kH;
         w = screen_w;
         h = kH;
+        visible = true;
+        parent = nullptr;
     }
 
-    void paint(Gfx &g) override
-    {
-        g.draw_raised(x, y, w, h);
-        /* Start button stub */
-        g.draw_raised(x + 2, y + 2, 54, h - 4);
-        g.draw_text(x + 8, y + 6, "Start", Theme::text, Theme::face);
+    StartMenu *menu = nullptr;
 
-        /* simple window buttons */
-        int bx = x + 64;
-        if (wm) {
-            for (int i = 0; i < wm->count; i++) {
-                Window *win = wm->stack[i];
-                if (!win || !win->visible)
-                    continue;
-                g.draw_raised(bx, y + 2, 80, h - 4);
-                g.draw_text(bx + 6, y + 6,
-                            win->title ? win->title : "?",
-                            Theme::text, Theme::face);
-                bx += 84;
-            }
+    void paint(Gfx &g)
+    {
+        int sx = x, sy = y;
+        if (parent)
+            screen_pos(sx, sy);
+
+        g.draw_raised(sx, sy, w, h);
+        /* top highlight already in raised; optional extra line */
+        g.fill_rect(sx, sy, w, 1, Theme::highlight);
+
+        /* Start button — raised, pressed = sunken when menu open */
+        int bx = sx + 2, by = sy + 3, bw = 54, bh = h - 6;
+        if (menu && menu->open)
+            g.draw_sunken(bx, by, bw, bh);
+        else
+            g.draw_raised(bx, by, bw, bh);
+        g.draw_text(bx + 8, by + 4, "Start", Theme::text, Theme::face);
+
+        /* clock tray (right) */
+        rtc_time_t t;
+        if (rtc_read(&t) != 0) {
+            t.hour = 0;
+            t.minute = 0;
         }
+
+        char clock[16];
+        /* HH:MM */
+        clock[0] = '0' + (t.hour / 10);
+        clock[1] = '0' + (t.hour % 10);
+        clock[2] = ':';
+        clock[3] = '0' + (t.minute / 10);
+        clock[4] = '0' + (t.minute % 10);
+        clock[5] = '\0';
+
+        int cw = 54, ch = h - 6;
+        int cx = sx + w - cw - 4, cy = sy + 3;
+        g.draw_sunken(cx, cy, cw, ch);
+        g.draw_text(cx + 8, cy + 4, clock, Theme::text, Theme::face);
     }
 
     bool on_event(const Event &e) override
     {
-        if (e.type != EventType::MouseDown || !(e.buttons & 1))
-            return false;
         if (!contains_screen(e.x, e.y))
             return false;
 
-        /* Start button */
-        if (e.x < x + 56) {
-            mark_dirty();
-            return true;
-        }
-
-        int bx = x + 64;
-        if (wm) {
-            for (int i = 0; i < wm->count; i++) {
-                Window *win = wm->stack[i];
-                if (!win || !win->visible)
-                    continue;
-                if (e.x >= bx && e.x < bx + 80) {
-                    wm->raise(win);
-                    mark_dirty();
-                    return true;
-                }
-                bx += 84;
+        if (e.type == EventType::MouseDown)
+        {
+            int sx, sy;
+            screen_pos(sx, sy);
+            if (e.x < sx + 80)
+            {
+                if (menu)
+                    menu->toggle(y + h);
+                mark_dirty();
+                return true;
             }
         }
         return true;
