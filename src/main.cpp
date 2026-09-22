@@ -13,7 +13,7 @@ extern "C" {
 }
 
 static void composite(Gfx &g, Desktop &desk, Wm &wm, Taskbar &bar,
-                      Cursor &cur, int mx, int my)
+                      StartMenu &menu, Cursor &cur, int mx, int my)
 {
     desk.w = g.width();
     desk.h = g.height();
@@ -22,8 +22,10 @@ static void composite(Gfx &g, Desktop &desk, Wm &wm, Taskbar &bar,
     desk.paint(g);
     wm.paint_all(g);
     bar.paint(g);
+    if (menu.open)
+        menu.paint(g);
 
-    desk.dirty = bar.dirty = false;
+    desk.dirty = bar.dirty = menu.dirty = false;
     wm.clear_dirty();
 
     if (mx >= 0 && my >= 0 && mx < g.width() && my < g.height())
@@ -59,7 +61,14 @@ extern "C" int main(void)
 
     Desktop desk;
     Taskbar bar;
+    StartMenu menu;
     bar.wm = &wm;
+
+    menu.add_item("About", "System", nullptr, nullptr);
+    menu.add_item("Exit", "System", nullptr, nullptr);
+    menu.rebuild_categories();
+
+    bar.menu = &menu;
 
     wm.add(&a);
     wm.add(&b);
@@ -69,7 +78,7 @@ extern "C" int main(void)
     int ox = mx, oy = my;
     uint8_t prev_buttons = 0;
 
-    composite(g, desk, wm, bar, cursor, mx, my);
+    composite(g, desk, wm, bar, menu, cursor, mx, my);
 
     for (;;) {
         mouse_state m;
@@ -108,9 +117,10 @@ extern "C" int main(void)
                 bar.on_event(ev);
             }
 
-            bool need = desk.dirty || bar.dirty || wm.any_dirty() || mx != ox || my != oy;
+            bool need = desk.dirty || bar.dirty || menu.dirty ||
+                        wm.any_dirty() || mx != ox || my != oy;
             if (need) {
-                composite(g, desk, wm, bar, cursor, mx, my);
+                composite(g, desk, wm, bar, menu, cursor, mx, my);
                 ox = mx; oy = my;
             }
         }
