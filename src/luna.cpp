@@ -168,7 +168,7 @@ extern "C" void luna_run(void)
         desk.paint_tree(gfx);
         wm.paint_all(gfx);
 
-        app_terminal_paint();
+        // app_terminal_paint();
 
         bar.paint_tree(gfx);
         if (menu.open && menu.visible)
@@ -273,8 +273,8 @@ extern "C" void luna_run(void)
                 full = true;
         }
 
-        /* if (app_explorer_is_open())
-            app_explorer_click(ev.x, ev.y); */
+        if (app_explorer_is_open())
+            app_explorer_click(ev.x, ev.y);
 
         if (full)
         {
@@ -313,11 +313,11 @@ extern "C" void luna_run(void)
                 continue;
             }
 
-            if (app_terminal_is_open())
+            /* if (app_terminal_is_open())
             {
                 app_terminal_handle_key(c);
                 continue;
-            }
+            } */
 
             Event kev{};
             kev.type = EventType::KeyDown;

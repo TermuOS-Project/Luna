@@ -16,8 +16,8 @@ void app_terminal_open(void *user);
 
 static LunaApp g_apps[] = {
     {"about", "About Luna", "Apps", app_about_open, nullptr},
-    //{"explorer", "File Explorer", "Apps", app_explorer_open, nullptr},
-    {"terminal", "Terminal", "System", app_terminal_open, nullptr},
+    {"explorer", "File Explorer", "Apps", app_explorer_open, nullptr},
+    //{"terminal", "Terminal", "System", app_terminal_open, nullptr},
     {"settings", "Settings", "System", app_settings_open, nullptr},
 };
 

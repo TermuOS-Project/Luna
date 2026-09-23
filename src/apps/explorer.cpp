@@ -7,6 +7,8 @@
 extern "C"
 {
 #include <unistd.h>
+#include <dirent.h>
+#include <syscall.h>
 }
 
 static Window exp_win;
@@ -84,13 +86,13 @@ static void exp_reload(void *user)
         row_count = 1;
     }
 
-    int fd = vfs_open(exp_path, O_RDONLY);
+    int fd = open(exp_path, O_RDONLY);
     if (fd >= 0)
     {
         char name[VFS_NAME_MAX];
         for (uint32_t idx = 0; row_count < 12; idx++)
         {
-            if (vfs_readdir(fd, idx, name) != 0)
+            if (readdir_vfs(fd, idx, name) != 0)
                 break;
             if (name[0] == '.' &&
                 (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
@@ -104,7 +106,17 @@ static void exp_reload(void *user)
 
             uint32_t type = VFS_FILE;
             uint64_t size = 0;
-            vfs_stat(full, &type, &size);
+            struct user_stat st;
+            if (stat_path(full, &st) == 0)
+            {
+                type = st.type;
+                size = st.size;
+            }
+            else
+            {
+                type = VFS_FILE;
+                size = 0;
+            }
             row_type[row_count] = type;
 
             if (type == VFS_DIR)
@@ -124,7 +136,7 @@ static void exp_reload(void *user)
             }
             row_count++;
         }
-        vfs_close(fd);
+        close(fd);
     }
 
     path_lab.text = exp_path;
@@ -160,8 +172,6 @@ static void exp_activate(int index)
         exp_reload(nullptr);
         return;
     }
-
-    kprintf("explorer: file %s (%s)\n", row_name[index], exp_path);
 }
 
 void app_explorer_open(void *user)
