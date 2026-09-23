@@ -1,7 +1,12 @@
 #include "focus.hpp"
-#include "widget.hpp"
+#include "widgets/widget.hpp"
 
 Widget *Focus::current_ = nullptr;
+
+Widget *Focus::current()
+{
+    return current_;
+}
 
 void Focus::set(Widget *w)
 {

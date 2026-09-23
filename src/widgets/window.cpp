@@ -1,6 +1,6 @@
 #include "window.hpp"
-#include "focus.hpp"
-#include "theme.hpp"
+#include "../focus.hpp"
+#include "../theme.hpp"
 
 void Window::paint(Gfx &g)
 {
