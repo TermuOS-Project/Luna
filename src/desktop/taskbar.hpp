@@ -1,7 +1,7 @@
-#include "widget.hpp"
-#include "startmenu.hpp"
+#include "../widgets/widget.hpp"
+#include "startmenu/startmenu.hpp"
 #include "wm.hpp"
-#include "theme.hpp"
+#include "../theme.hpp"
 
 extern "C"
 {
@@ -46,10 +46,7 @@ public:
 
         /* clock tray (right) */
         rtc_time_t t;
-        if (rtc_read(&t) != 0) {
-            t.hour = 0;
-            t.minute = 0;
-        }
+        rtc_read(&t);
 
         char clock[16];
         /* HH:MM */
@@ -60,8 +57,11 @@ public:
         clock[4] = '0' + (t.minute % 10);
         clock[5] = '\0';
 
-        int cw = 54, ch = h - 6;
-        int cx = sx + w - cw - 4, cy = sy + 3;
+        int cw = 54;
+        int ch = h - 6;
+        int cx = sx + w - cw - 4;
+        int cy = sy + 3;
+
         g.draw_sunken(cx, cy, cw, ch);
         g.draw_text(cx + 8, cy + 4, clock, Theme::text, Theme::face);
     }

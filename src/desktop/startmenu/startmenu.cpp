@@ -1,6 +1,6 @@
 #include "startmenu.hpp"
-#include "theme.hpp"
-#include "focus.hpp"
+#include "../../theme.hpp"
+#include "../../focus.hpp"
 
 static const char *cat_name(const char *c)
 {

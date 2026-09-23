@@ -1,5 +1,5 @@
 #pragma once
-#include "widget.hpp"
+#include "../../widgets/widget.hpp"
 
 struct StartItem
 {
@@ -33,8 +33,6 @@ public:
     void paint(Gfx &g) override;
     bool on_event(const Event &e) override;
 
-    void rebuild_categories();
-
 private:
     struct Cat
     {
@@ -45,6 +43,7 @@ private:
     Cat cats[kMaxCats]{};
     int cat_count = 0;
 
+    void rebuild_categories();
     int root_height() const;
     int sub_height(int cat) const;
 
