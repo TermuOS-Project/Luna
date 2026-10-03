@@ -174,6 +174,8 @@ extern "C" void luna_run(void)
         if (menu.open && menu.visible)
             menu.paint_tree(gfx);
         cursor_draw(gfx);
+
+        fb_present();
     };
 
     composite();
@@ -264,19 +266,18 @@ extern "C" void luna_run(void)
             }
         }
 
+        bool moved = (st.x != g_mx || st.y != g_my);
+
         if (desk.dirty || bar.dirty || menu.dirty)
             full = true;
-
         for (int i = 0; i < wm.count; i++)
-        {
             if (wm.stack[i] && wm.stack[i]->dirty)
                 full = true;
-        }
 
         if (app_explorer_is_open())
             app_explorer_click(ev.x, ev.y);
 
-        if (full)
+        if (full | moved)
         {
             desk.dirty = bar.dirty = menu.dirty = false;
             for (int i = 0; i < wm.count; i++)
@@ -286,13 +287,6 @@ extern "C" void luna_run(void)
             g_mx = st.x;
             g_my = st.y;
             composite();
-        }
-        else
-        {
-            cursor_erase(gfx);
-            g_mx = st.x;
-            g_my = st.y;
-            cursor_draw(gfx);
         }
 
         if (kbd_haschar())
