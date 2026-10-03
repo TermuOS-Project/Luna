@@ -277,7 +277,7 @@ extern "C" void luna_run(void)
 
         bool moved = (st.x != g_mx || st.y != g_my);
 
-        if (full | moved)
+        if (full || moved)
         {
             desk.dirty = bar.dirty = menu.dirty = false;
             for (int i = 0; i < wm.count; i++)
