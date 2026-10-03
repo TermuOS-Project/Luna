@@ -226,7 +226,6 @@ extern "C" void luna_run(void)
             (ev.type == EventType::MouseMove || ev.type == EventType::MouseUp))
         {
             drag_win->on_event(ev);
-            full = true;
             if (ev.type == EventType::MouseUp)
                 drag_win = nullptr;
         }
@@ -277,7 +276,7 @@ extern "C" void luna_run(void)
 
         bool moved = (st.x != g_mx || st.y != g_my);
 
-        if (full || moved)
+        if (full)
         {
             desk.dirty = bar.dirty = menu.dirty = false;
             for (int i = 0; i < wm.count; i++)
@@ -287,6 +286,17 @@ extern "C" void luna_run(void)
             g_mx = st.x;
             g_my = st.y;
             composite();
+        } else if (moved) {
+            cursor_erase(gfx);
+            g_mx = st.x; g_my = st.y;
+            cursor_draw(gfx);
+
+            static uint64_t last_present;
+            static int n;
+            if (++n >= 3) {
+                n = 0;
+                fb_present();
+            }
         }
 
         if (kbd_haschar())
