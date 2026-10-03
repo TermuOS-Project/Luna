@@ -266,8 +266,6 @@ extern "C" void luna_run(void)
             }
         }
 
-        bool moved = (st.x != g_mx || st.y != g_my);
-
         if (desk.dirty || bar.dirty || menu.dirty)
             full = true;
         for (int i = 0; i < wm.count; i++)
@@ -276,6 +274,8 @@ extern "C" void luna_run(void)
 
         if (app_explorer_is_open())
             app_explorer_click(ev.x, ev.y);
+
+        bool moved = (st.x != g_mx || st.y != g_my);
 
         if (full | moved)
         {
