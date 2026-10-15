@@ -7,6 +7,7 @@ public:
     void init_from_fb();
     int width() const;
     int height() const;
+
     void fill_rect(int x, int y, int w, int h, uint32_t colour);
     void draw_rect(int x, int y, int w, int h, uint32_t colour);
     void put_pixel(int x, int y, uint32_t colour);
@@ -15,11 +16,19 @@ public:
     static uint32_t rgb(uint8_t r, uint8_t g, uint8_t b);
 
     void blit_rgba(int x, int y, int w, int h, const uint8_t *rgba);
-
     void draw_raised(int x, int y, int w, int h);
     void draw_sunken(int x, int y, int w, int h);
 
+    void present();
+
+    uint32_t *pixels() { return buf_; }
+
+    static constexpr int kMaxW = 640;
+    static constexpr int kMaxH = 480;
+    
 private:
     int w_ = 0, h_ = 0;
+    uint32_t *buf_ = nullptr;
+
     void draw_char(int x, int y, char c, uint32_t fg, uint32_t bg);
 };

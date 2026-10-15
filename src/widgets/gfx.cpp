@@ -7,16 +7,30 @@ extern "C" {
 #include <stdint.h>
 }
 
+/* .bss - not on the stack */
+static uint32_t g_shadow[Gfx::kMaxW * Gfx::kMaxH];
+
 void Gfx::init_from_fb()
 {
     struct fb_info info{};
     if (fb_info(&info) != 0)
     {
         w_ = h_ = 0;
+        buf_ = nullptr;
         return;
     }
     h_ = (int)info.height;
     w_ = (int)info.width;
+    if (w_ <= 0 || h_ <= 0 || w_ > kMaxW || h_ > kMaxH) {
+        w_ = h_ = 0;
+        buf_ = nullptr;
+        return;
+    }
+    buf_ = g_shadow;
+
+    /* clear shadow */
+    for (int i = 0; i < w_ * h_; i++)
+        buf_[i] = 0;
 }
 
 int Gfx::width() const { return w_; }
@@ -24,7 +38,7 @@ int Gfx::height() const { return h_; }
 
 void Gfx::fill_rect(int x, int y, int w, int h, uint32_t colour)
 {
-    if (w <= 0 || h <= 0)
+    if (!buf_ || w <= 0 || h <= 0)
         return;
     fb_fill_rect((uint64_t)x, (uint64_t)y, (uint64_t)w, (uint64_t)h, colour);
 }
