@@ -23,8 +23,8 @@ public:
 
     uint32_t *pixels() { return buf_; }
 
-    static constexpr int kMaxW = 640;
-    static constexpr int kMaxH = 480;
+    static constexpr int kMaxW = 1920;
+    static constexpr int kMaxH = 1080;
     
 private:
     int w_ = 0, h_ = 0;

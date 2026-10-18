@@ -18,6 +18,7 @@ extern "C"
 #include <fb.h>
 #include <unistd.h>
 #include <rtc.h>
+#include <stdio.h>
 }
 
 static constexpr int CURSOR_W = 12;
@@ -110,8 +111,11 @@ extern "C" void luna_run(void)
 {
     Gfx gfx;
     gfx.init_from_fb();
-    if (gfx.width() <= 0)
+    if (gfx.width() <= 0) {
+        printf("luna: no fb\n");
         return;
+    }
+    printf("luna: fb ok\n");
 
     mouse_set_bounds(gfx.width(), gfx.height());
     g_mx = gfx.width() / 2;

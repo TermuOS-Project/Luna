@@ -1,4 +1,6 @@
-TERMUOS_ROOT ?= $(abspath ../..)
+TERMUOS_ROOT ?= $(abspath ../../..)
+
+CRT0 := $(TERMUOS_ROOT)/tsys/lib/crt0.S
 
 TLIBC_DIR ?= $(TERMUOS_ROOT)/usr/lib/tlibc
 TLIBC_A   ?= $(TLIBC_DIR)/libtlibc.a
@@ -51,7 +53,7 @@ src/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OUT): $(OBJS) $(TLIBC_A) $(TERMUOS_LIB)
-	$(CXX) $(CFLAGS) -o $(OUT) $(CRT0) $(OBJS) $(TLIBC_A) $(TERMUOS_LIB)
+	$(CXX) $(CFLAGS) -o $(OUT) $(CRT0) $(OBJS) $(TLIBC_A) $(TERMUOS_LIB) -Wl,-e,_start
 
 clean:
 	rm -f $(OBJS) $(OUT)
