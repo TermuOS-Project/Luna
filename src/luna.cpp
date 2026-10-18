@@ -148,7 +148,7 @@ extern "C" void luna_run(void)
 
     // luna_icon_t about_ic{};
     // luna_icon_load("about.rgba", 32, 32, &about_ic);
-
+    
     // DeskIcon icon_about;
     // icon_about.x = 24;
     // icon_about.y = 24;
