@@ -111,11 +111,8 @@ extern "C" void luna_run(void)
 {
     Gfx gfx;
     gfx.init_from_fb();
-    if (gfx.width() <= 0) {
-        printf("luna: no fb\n");
+    if (gfx.width() <= 0)
         return;
-    }
-    printf("luna: fb ok\n");
 
     mouse_set_bounds(gfx.width(), gfx.height());
     g_mx = gfx.width() / 2;
@@ -179,7 +176,7 @@ extern "C" void luna_run(void)
             menu.paint_tree(gfx);
         cursor_draw(gfx);
 
-        fb_present();
+        gfx.present();
     };
 
     composite();
@@ -279,28 +276,17 @@ extern "C" void luna_run(void)
             app_explorer_click(ev.x, ev.y);
 
         bool moved = (st.x != g_mx || st.y != g_my);
-
-        if (full)
-        {
+        
+        bool need = full || desk.dirty || bar.dirty || menu.dirty || (drag_win != nullptr);
+        if (need) {
             desk.dirty = bar.dirty = menu.dirty = false;
-            for (int i = 0; i < wm.count; i++)
-                if (wm.stack[i])
-                    wm.stack[i]->dirty = false;
-
-            g_mx = st.x;
-            g_my = st.y;
+            g_mx = st.x; g_my = st.y;
             composite();
         } else if (moved) {
             cursor_erase(gfx);
             g_mx = st.x; g_my = st.y;
             cursor_draw(gfx);
-
-            static uint64_t last_present;
-            static int n;
-            if (++n >= 3) {
-                n = 0;
-                fb_present();
-            }
+            gfx.present();
         }
 
         if (kbd_haschar())

@@ -40,21 +40,27 @@ void Gfx::fill_rect(int x, int y, int w, int h, uint32_t colour)
 {
     if (!buf_ || w <= 0 || h <= 0)
         return;
-    fb_fill_rect((uint64_t)x, (uint64_t)y, (uint64_t)w, (uint64_t)h, colour);
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > w_) w = w_ - x;
+    if (y + h > h_) h = h_ - y;
+    for (int row = 0; row < h; row++)
+        for (int col = 0; col < w; col++)
+            buf_[(y + row) * w_ + (x + col)] = colour;
 }
 
 void Gfx::put_pixel(int x, int y, uint32_t colour)
 {
-    if (x < 0 || y < 0 || x >= w_ || y >= h_)
+    if (!buf_ || x < 0 || y < 0 || x >= w_ || y >= h_)
         return;
-    fb_putpixel((uint64_t)x, (uint64_t)y, colour);
+    buf_[y * w_ + x] = colour;
 }
 
 uint32_t Gfx::get_pixel(int x, int y)
 {
-    if (x < 0 || y < 0 || x >= w_ || y >= h_)
+    if (!buf_ || x < 0 || y < 0 || x >= w_ || y >= h_)
         return 0;
-    return (uint32_t)fb_getpixel((uint32_t)x, (uint32_t)y);
+    return buf_[y * w_ + x];
 }
 
 uint32_t Gfx::rgb(uint8_t r, uint8_t g, uint8_t b)
@@ -142,4 +148,12 @@ void Gfx::draw_sunken(int x, int y, int w, int h)
     fill_rect(x, y, 1, h, Theme::shadow);
     fill_rect(x, y + h - 1, w, 1, Theme::highlight);
     fill_rect(x + w - 1, y, 1, h, Theme::highlight);
+}
+
+void Gfx::present()
+{
+    if (!buf_)
+        return;
+
+    fb_blit(buf_);
 }
