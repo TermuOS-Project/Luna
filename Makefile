@@ -36,7 +36,8 @@ CPPSRCS := \
 	src/apps/registry.cpp \
 	src/apps/settings.cpp \
 	src/apps/widgets.cpp \
-	src/apps/explorer.cpp
+	src/apps/explorer.cpp \
+	src/apps/browser.cpp
 
 OBJS := $(CPPSRCS:.cpp=.o)
 OUT  := luna.tsys
