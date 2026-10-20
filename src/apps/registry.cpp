@@ -1,6 +1,10 @@
 #include "app.hpp"
 #include "../desktop/startmenu/startmenu.hpp"
 
+extern "C" {
+#include <unistd.h>
+}
+
 Wm *g_luna_wm = nullptr;
 
 static void trampoline(void *user)
@@ -14,8 +18,17 @@ static void trampoline(void *user)
 void app_about_open(void *user);
 void app_terminal_open(void *user);
 
+static void launch_about(void *user)
+{
+    (void)user;
+    long pid = spawn("/bin/about.tsys");
+    if (pid < 0) {
+        return;
+    }
+}
+
 static LunaApp g_apps[] = {
-    {"about", "About Luna", "Apps", app_about_open, nullptr},
+    {"about", "About Luna", "Apps", launch_about, nullptr},
     {"explorer", "File Explorer", "Apps", app_explorer_open, nullptr},
     {"browser", "Browser", "Network", app_browser_open, nullptr},
     {"settings", "Settings", "System", app_settings_open, nullptr},
