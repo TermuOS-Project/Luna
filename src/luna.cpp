@@ -11,6 +11,7 @@
 #include "desktop/taskbar.hpp"
 #include "desktop/deskicon.hpp"
 #include "apps/app.hpp"
+#include "luna_ipc.h"
 
 extern "C"
 {
@@ -19,6 +20,7 @@ extern "C"
 #include <unistd.h>
 #include <rtc.h>
 #include <stdio.h>
+#include <ipc.h>
 }
 
 static constexpr int CURSOR_W = 12;
@@ -31,6 +33,28 @@ static bool g_running;
 static bool *g_running_ptr = nullptr;
 
 static Desktop *g_desk = nullptr;
+
+static long g_luna_port = -1;
+
+static void luna_ipc_init(void)
+{
+    g_luna_port = port_create(LUNA_PORT_NAME);
+    if (g_luna_port < 0)
+        printf("luna: port_create failed\n");
+    else
+        printf("luna: ipc port ready\n");
+}
+
+static void luna_ipc_poll(void)
+{
+    if (g_luna_port < 0)
+        return;
+
+    ipc_message_user_t msg;
+    while (port_try_receive(g_luna_port, &msg) == 0) {
+        (void)msg;
+    }
+}
 
 void luna_set_wallpaper(uint32_t colour)
 {
@@ -120,6 +144,8 @@ extern "C" void luna_run(void)
     g_running = true;
     g_running_ptr = &g_running;
 
+    luna_ipc_init();
+
     Desktop desk;
     desk.x = 0;
     desk.y = 0;
@@ -188,6 +214,8 @@ extern "C" void luna_run(void)
 
     while (g_running)
     {
+        luna_ipc_poll();
+
         rtc_time_t t;
         rtc_read(&t);
         if ((int)t.minute != last_min)
