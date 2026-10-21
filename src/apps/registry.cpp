@@ -5,8 +5,6 @@ extern "C" {
 #include <unistd.h>
 }
 
-Wm *g_luna_wm = nullptr;
-
 static void trampoline(void *user)
 {
     auto *app = (LunaApp *)user;

@@ -12,6 +12,7 @@
 #include "desktop/deskicon.hpp"
 #include "apps/app.hpp"
 #include "luna_ipc.h"
+#include <new>
 
 extern "C"
 {
@@ -35,6 +36,141 @@ static bool *g_running_ptr = nullptr;
 static Desktop *g_desk = nullptr;
 
 static long g_luna_port = -1;
+static bool g_ipc_dirty = false;
+
+Wm *g_luna_wm = nullptr;
+
+static constexpr int kMaxExt = 8;
+
+struct ExtWin {
+    int used;
+    int id;
+    Window win;
+    char title_storage[LUNA_TITLE_MAX];
+};
+
+static ExtWin g_ext[kMaxExt];
+static int g_next_id = 1;
+
+static int ext_alloc(const char *title, int w, int h)
+{
+    if (!g_luna_wm || w < 80 || h < 60)
+        return -1;
+
+    for (int i = 0; i < kMaxExt; i++) {
+        if (g_ext[i].used)
+            continue;
+
+        ExtWin *e = &g_ext[i];
+
+        new (&e->win) Window();
+
+        e->used = 1;
+        e->id = g_next_id++;
+
+        int n = 0;
+        if (title) {
+            while (title[n] && n < LUNA_TITLE_MAX - 1) {
+                e->title_storage[n] = title[n];
+                n++;
+            }
+        }
+        e->title_storage[n] = '\0';
+
+        e->win.x = 80 + (i * 24);
+        e->win.y = 60 + (i * 24);
+        e->win.w = w;
+        e->win.h = h;
+        e->win.title = e->title_storage;
+        e->win.visible = false;
+
+        if (!g_luna_wm->add(&e->win)) {
+            e->win.~Window();
+            e->used = 0;
+            return -1;
+        }
+        return e->id;
+    }
+    return -1;
+}
+
+static ExtWin *ext_find(int id)
+{
+    for (int i = 0; i < kMaxExt; i++)
+        if (g_ext[i].used && g_ext[i].id == id)
+            return &g_ext[i];
+    return nullptr;
+}
+
+static void reply_to(const char *reply_port, int window_id)
+{
+    if (!reply_port || !reply_port[0])
+        return;
+
+    long idx = port_find(reply_port);
+    if (idx < 0)
+        return;
+
+    luna_reply r;
+    r.window_id = window_id;
+    port_send(idx, LUNA_MSG_REPLY, &r, sizeof r);
+}
+
+static void handle_create(const uint8_t *payload, uint32_t len)
+{
+    if (len < sizeof(luna_create)) {
+        return;
+    }
+
+    luna_create c;
+    const uint8_t *src = payload;
+    uint8_t *dst = (uint8_t *)&c;
+    for (uint32_t i = 0; i < sizeof c; i++)
+        dst[i] = src[i];
+
+    c.title[LUNA_TITLE_MAX - 1] = '\0';
+    c.reply_port[LUNA_RPORT_MAX - 1] = '\0';
+
+    if (c.w < 80) c.w = 80;
+    if (c.h < 60) c.h = 60;
+    if (c.w > 800) c.w = 800;
+    if (c.h > 600) c.h = 600;
+
+    int id = ext_alloc(c.title, c.w, c.h);
+    reply_to(c.reply_port, id);
+}
+
+static void handle_show(const uint8_t *payload, uint32_t len)
+{
+    if (len < sizeof(int32_t))
+        return;
+    int32_t id;
+    uint8_t *d = (uint8_t *)&id;
+    d[0] = payload[0]; d[1] = payload[1]; d[2] = payload[2]; d[3] = payload[3];
+
+    ExtWin *e = ext_find(id);
+    if (!e)
+        return;
+    e->win.visible = true;
+    if (g_luna_wm)
+        g_luna_wm->raise(&e->win);
+    e->win.mark_dirty();
+}
+
+static void handle_close(const uint8_t *payload, uint32_t len)
+{
+    if (len < sizeof(int32_t))
+        return;
+    int32_t id;
+    uint8_t *d = (uint8_t *)&id;
+    d[0] = payload[0]; d[1] = payload[1]; d[2] = payload[2]; d[3] = payload[3];
+
+    ExtWin *e = ext_find(id);
+    if (!e)
+        return;
+    e->win.visible = false;
+    e->win.mark_dirty();
+}
 
 static void luna_ipc_init(void)
 {
@@ -52,7 +188,24 @@ static void luna_ipc_poll(void)
 
     ipc_message_user_t msg;
     while (port_try_receive(g_luna_port, &msg) == 0) {
-        (void)msg;
+        const uint8_t *payload = msg.inline_data;
+
+        if (msg.data)
+            payload = (const uint8_t *)msg.data;
+
+        switch (msg.code) {
+        case LUNA_MSG_CREATE:
+            handle_create(payload, msg.length);
+            break;
+        case LUNA_MSG_SHOW:
+            handle_show(payload, msg.length);
+            break;
+        case LUNA_MSG_CLOSE:
+            handle_close(payload, msg.length);
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -144,6 +297,9 @@ extern "C" void luna_run(void)
     g_running = true;
     g_running_ptr = &g_running;
 
+    Wm wm;
+    g_luna_wm = &wm;
+
     luna_ipc_init();
 
     Desktop desk;
@@ -154,7 +310,6 @@ extern "C" void luna_run(void)
     g_desk = &desk;
     desk.wallpaper = Theme::desktop;
 
-    Wm wm;
     desk.wm = &wm;
     g_luna_wm = &wm;
 
@@ -214,7 +369,13 @@ extern "C" void luna_run(void)
 
     while (g_running)
     {
+        bool full = false;
+
         luna_ipc_poll();
+        if (g_ipc_dirty) {
+            g_ipc_dirty = false;
+            full = true;
+        }
 
         rtc_time_t t;
         rtc_read(&t);
@@ -223,8 +384,6 @@ extern "C" void luna_run(void)
             last_min = t.minute;
             bar.mark_dirty();
         }
-
-        bool full = false;
 
         mouse_state st;
         if (mouse_get_state(&st) != 0)

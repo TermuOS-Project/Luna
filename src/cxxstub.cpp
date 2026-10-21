@@ -15,6 +15,8 @@ void *operator new[](size_t size)
     return nullptr;
 }
 
+inline void *operator new(unsigned long, void *p) noexcept { return p; }
+
 void operator delete(void *p) noexcept
 {
     (void)p;
